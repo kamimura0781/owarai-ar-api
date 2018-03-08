@@ -1,0 +1,18 @@
+<html>
+    <head>
+        <title>テスト</title>
+    </head>
+    <body>
+        <form action="./api.php" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="req" value="add_tukkomi">
+            <input type="hidden" name="spot_id" value="">
+            <input type="hidden" name="spot_lat" value="39.9">
+            <input type="hidden" name="spot_long" value="135.3">
+            <input type="hidden" name="tukkomi_word" value="">
+            <input type="hidden" name="user_id" value="0">
+            <input type="file" name="img">
+            <input type="hidden" name="MAX_FILE_SIZE" value="2000000" />
+            <input type="submit" name="送信">
+        </form>
+    </body>
+</html>
