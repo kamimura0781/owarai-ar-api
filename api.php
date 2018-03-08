@@ -1,4 +1,8 @@
 <?php
+//
+//クライアントからの入力部分は，デバッグが終われば必ず訂正する！
+//
+
 //全ツッコミ情報を取得
 function getAllTukkomi($pdo,$lat,$long){
     $output = [];
@@ -33,6 +37,40 @@ function getUser($pdo,$user_id){
     return $row;
 }
 
+//ツッコミ情報を追加
+function addTukkomi($pdo,$userId,$content,$photoId,$img,$spotId,$spot_lat,$spot_long){
+    $id = genTukkomiId();
+
+    try{
+        if($spotId == null){    //spotIdがなければ，新規スポットとしてツッコミを登録
+            //スポットIDを生成
+            $spotId = genSpotId();
+            
+            //新規スポットをspotテーブルに登録
+            $pdo->beginTransaction();
+            $sql = "INSERT INTO spot (id,latitude,longitude) VALUES (${spotId},${spot_lat},${spot_long}";
+            $sth = $pdo->prepare($sql);
+            $sth->execute();
+            $pdo->commit();
+
+            //写真IDを生成
+            $photoId = genPhotoId();
+
+            //写真をサーバのフォルダにおく
+            writePhoto($img,$photoId);
+        }
+        //既存スポットとしてツッコミを登録
+        $pdo->beginTransaction();
+        $sql = "INSERT INTO tukkomi (id,userId,content,likes,photoId,spotId) VALUES (${id},${userId},${content},0,${photoId},${spotId}";
+        $sth = $pdo->prepare($sql);
+        $sth->execute();
+        $pdo->commit();
+        return true;
+    }catch(PDOException $e){
+        return false;
+    }
+}
+
 //2点間の距離を計算
 //（緯度と経度の差を計算している．また，2乗和のルートではなく2乗和を返す）
 function calcDist($lat1,$lat2,$long1,$long2){
@@ -57,10 +95,10 @@ try {
 	exit();
 }
 
+//リクエストをクライアントから受け取る
 $req = isset($_POST["req"]) ? $_POST["req"] : "tukkomi";
 
-if ($req == "fetch_list")
-{
+if ($req == "fetch_list"){
     //位置情報がクライアントから入力される
     $lat = isset($_POST["lat"]) ? $_POST["lat"] : 35;
     $long = isset($_POST["long"]) ? $_POST["long"] : 135;
@@ -91,4 +129,43 @@ if ($req == "fetch_list")
 
     //クライアントにツッコミ情報を返す
     echo json_encode($output);
+}else if($req == "fetch_same"){
+    //位置情報がクライアントから入力される
+    $lat = isset($_POST["lat"]) ? $_POST["lat"] : 35;
+    $long = isset($_POST["long"]) ? $_POST["long"] : 135;
+    
+    // ツッコミを全部取得
+    $output = getAllTukkomi($pdo,$lat,$long);
+
+    //距離の入れ替え処理
+    foreach ((array) $output as $key => $value) {
+        $sort[$key] = $value['dist'];
+    }
+    array_multisort($sort, SORT_ASC, $output);
+
+    //クライアントに全ツッコミ情報を返す
+    echo json_encode($output);
+}else if($req == "add_tukkomi"){
+    //追加するツッコミ情報がクライアントから入力される
+    $spot_id = isset($_POST["spot_id"]) ? $_POST["spot_id"] : 1;
+    $spot_lat = isset($_POST["spot_lat"]) ? $_POST["spot_lat"] : null;
+    $spot_long = isset($_POST["spot_long"]) ? $_POST["spot_long"] : null;
+    $img = isset($_POST["img"]) ? $_POST["img"] : null;
+    $img_id = isset($_POST["img_id"]) ? $_POST["img_id"] : 0;
+    $tukkomi_word = isset($_POST["tukkomi_word"]) ? $_POST["tukkomi_word"] : "";
+    $user_id = isset($_POST["user_id"]) ? $_POST["user_id"] : 1;
+
+    //もし新規画像ファイルが送られてきたなら，base64形式からバイナリ形式に変換する
+    if($img != null){
+        $img = base64_decode($img);
+    }
+
+    //ツッコミを追加
+    if(addTukkomi($user_id,$tukkomi_word,$photoId,$spot_id,$spot_lat,$spot_long)){
+        echo '登録成功';
+    }else{
+        $pdo->rollBack();
+    	echo '登録失敗';
+    	exit();
+    }
 }
