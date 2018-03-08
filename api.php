@@ -331,6 +331,29 @@ if($req == "add_like")
     //ユーザーのid
     $user_id    = isset($_POST["user_id"])    ? $_POST["user_id"]    : 1;
 
+    // 既に同一ユーザーが同一ツッコミにlikeしていないか確認
+    try
+    {
+        $sql = "SELECT * FROM likes WHERE userId = :userId AND tukkomiId = :tukkomiId";
+        $sth = $pdo->prepare($sql);
+        $sth->bindValue(':userId', $user_id);
+        $sth->bindValue(':tukkomiId', $tukkomi_id);
+        $sth->execute();
+        $result = $sth->fetchAll(PDO::FETCH_OBJ);
+
+        if (count($result) > 0)
+        {
+            echo "既に登録しています。";
+            exit;
+        }
+    }
+    catch(PDOException $e)
+    {
+        echo "登録失敗";
+        exit;
+    }
+
+
     // データベースのlikesテーブルへ登録
     try
     {
