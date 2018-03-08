@@ -58,6 +58,7 @@ function addTukkomi($pdo,$userId,$content,$photoId,$img,$spotId,$spot_lat,$spot_
         //spotIdがなければ，新規スポットとしてツッコミを登録
         if($spotId == null)
         {
+            
             //新規スポットをspotテーブルに登録
             $pdo->beginTransaction();
             $sql = "INSERT INTO spot (latitude,longitude) VALUES (${spot_lat},${spot_long})";
@@ -65,14 +66,19 @@ function addTukkomi($pdo,$userId,$content,$photoId,$img,$spotId,$spot_lat,$spot_
             $sth->execute();
             $pdo->commit();
 
+            //もし新規画像ファイルが送られてきたなら，base64形式からバイナリ形式に変換する
+            if($img != null)
+            {
+                $img = base64_decode($img);
+                //写真IDを生成
+                $photoId = genPhotoId();    
+                //写真をサーバのフォルダにおく
+                file_put_contents("./img/".$photoId.".png", $img);
+            }
+
             // $last_spotId = $pdo->lastInsertId('id');
             // printf($last_spotId);
 
-            //写真IDを生成
-            $photoId = genPhotoId();
-
-            //写真をサーバのフォルダにおく
-            //writePhoto($img,$photoId);
         }
         
         //既存スポットとしてツッコミを登録
@@ -233,20 +239,20 @@ if($req == "fetch_same")
 // ツッコミを加える
 if($req == "add_tukkomi")
 {
+    echo "<pre>";
+    print_r($_POST);
+    echo "</pre>";
     //追加するツッコミ情報がクライアントから入力される
     $spot_id   = isset($_POST["spot_id"]) ? $_POST["spot_id"] : null;
-    $spot_lat  = isset($_POST["spot_lat"]) ? $_POST["spot_lat"] : 135;
-    $spot_long = isset($_POST["spot_long"]) ? $_POST["spot_long"] : 35;
+    $spot_lat  = isset($_POST["spot_lat"]) ? $_POST["spot_lat"] : 40;
+    $spot_long = isset($_POST["spot_long"]) ? $_POST["spot_long"] : 135;
     $img       = isset($_POST["img"]) ? $_POST["img"] : null;
     $img_id    = isset($_POST["img_id"]) ? $_POST["img_id"] : 0;
     $tukkomi_word = isset($_POST["tukkomi_word"]) ? $_POST["tukkomi_word"] : "nandeyanen";
     $user_id   = isset($_POST["user_id"]) ? $_POST["user_id"] : 1;
 
-    //もし新規画像ファイルが送られてきたなら，base64形式からバイナリ形式に変換する
-    if($img != null)
-    {
-        $img = base64_decode($img);
-    }
+    //デバック用(base64で届かないとき)
+    //$img = base64_encode(file_get_contents($_FILES["img"]["tmp_name"]));
 
     //ツッコミを追加
     if(addTukkomi($pdo,$user_id,$tukkomi_word,$img_id,$img,$spot_id,$spot_lat,$spot_long))
