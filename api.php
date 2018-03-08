@@ -9,7 +9,7 @@ function getAllTukkomi($pdo,$lat,$long){
     $stmt = $pdo->query("SELECT * FROM tukkomi");
     // 連想配列を取得
     while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $stmt2 = $pdo->query("SELECT * FROM spot WHERE id = ${row[id]}");
+        $stmt2 = $pdo->query("SELECT * FROM spot WHERE id = ${row['spotId']}");
         $spot = $stmt2->fetch(PDO::FETCH_ASSOC);
         $row = array_merge($row, $spot);
 
@@ -58,11 +58,14 @@ function addTukkomi($pdo,$userId,$content,$photoId,$img,$spotId,$spot_lat,$spot_
             //写真をサーバのフォルダにおく
             //writePhoto($img,$photoId);
         }
-        $pdo->beginTransaction();
+        
         
         //既存スポットとしてツッコミを登録
-        $new_spot_id = $spotId == null ? $pdo->lastInsertId('id') : $spotId;
+        $stmt = $pdo->query("SELECT MAX(id) FROM spot");
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $new_spot_id = $spotId == null ? $row['MAX(id)'] : $spotId;
 
+        $pdo->beginTransaction();
         $sql = "INSERT INTO tukkomi (userId,content,likes,photoId,spotId) VALUES (${userId},\"${content}\",0,\"${photoId}\",${new_spot_id})";
         // $sth = $pdo->prepare($sql);
         // $sth->execute();
@@ -75,7 +78,7 @@ function addTukkomi($pdo,$userId,$content,$photoId,$img,$spotId,$spot_lat,$spot_
         // $sth->execute();
         // $pdo->commit();
         $stmt = $pdo->query($sql);
-        $stmt->execute();
+        //$stmt->execute();
         $pdo->commit();
         return true;
     }catch(PDOException $e){
@@ -167,7 +170,7 @@ if ($req == "fetch_list"){
     echo json_encode($output);
 }else if($req == "add_tukkomi"){
     //追加するツッコミ情報がクライアントから入力される
-    $spot_id = isset($_POST["spot_id"]) ? $_POST["spot_id"] : null;
+    $spot_id = isset($_POST["spot_id"]) ? $_POST["spot_id"] :null;
     $spot_lat = isset($_POST["spot_lat"]) ? $_POST["spot_lat"] : 135;
     $spot_long = isset($_POST["spot_long"]) ? $_POST["spot_long"] : 35;
     $img = isset($_POST["img"]) ? $_POST["img"] : null;
