@@ -6,7 +6,8 @@
     $tukkomi_id;
     $spot_lat;
     $spot_lang;
-}*/
+}
+*/
 
 //異なるドメインからのデータ送信を許可
 header("Access-Control-Allow-Origin: *");
@@ -24,13 +25,29 @@ try {
 	exit();
 }
 
+$output = [];
+
+//入力
+$lat = isset($_POST["lat"]) ? $_POST["lat"] : 35;
+$long = isset($_POST["long"]) ? $_POST["long"] : 135;
+
 // ツッコミを全部取得
 $stmt = $pdo->query("SELECT * FROM tukkomi");
 // 連想配列を取得
 while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    print_r($row);
+    // ツッコミを全部取得
+$stmt2 = $pdo->query("SELECT * FROM spot WHERE id = ${row[id]}");
+    $spot = $stmt2->fetch(PDO::FETCH_ASSOC);
+    $newRow = array_merge($row, $spot);
+
+    array_push($output, $newRow);
 }
 
+print_r($output);
+
 //入力
-//$lat = $_POST["lat"];
-//$long = $_POST["long"];
+$lat = isset($_POST["lat"]) ? $_POST["lat"] : 35;
+$long = isset($_POST["long"]) ? $_POST["long"] : 135;
+
+//距離の入れ替え処理
+for
