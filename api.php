@@ -41,22 +41,29 @@ function getUser($pdo,$user_id){
 function addTukkomi($pdo,$userId,$content,$photoId,$img,$spotId,$spot_lat,$spot_long){
     try{
         if($spotId == null){    //spotIdがなければ，新規スポットとしてツッコミを登録
-            //新規スポットをspotテーブルに登録
             $pdo->beginTransaction();
-            $sql = "INSERT INTO spot (latitude,longitude) VALUES (${spot_lat},${spot_long}";
+            
+            //新規スポットをspotテーブルに登録
+            $sql = "INSERT INTO spot (latitude,longitude) VALUES (${spot_lat},${spot_long})";
             $sth = $pdo->prepare($sql);
             $sth->execute();
             $pdo->commit();
+
+            // $last_spotId = $pdo->lastInsertId('id');
+            // printf($last_spotId);
 
             //写真IDを生成
             $photoId = genPhotoId();
 
             //写真をサーバのフォルダにおく
-            writePhoto($img,$photoId);
+            //writePhoto($img,$photoId);
         }
-        //既存スポットとしてツッコミを登録
         $pdo->beginTransaction();
-        $sql = "INSERT INTO tukkomi (userId,content,likes,photoId,spotId) VALUES (${userId},\"${content}\",0,${photoId},${spotId})";
+        
+        //既存スポットとしてツッコミを登録
+        $new_spot_id = $spotId == null ? $pdo->lastInsertId('id') : $spotId;
+
+        $sql = "INSERT INTO tukkomi (userId,content,likes,photoId,spotId) VALUES (${userId},\"${content}\",0,\"${photoId}\",${new_spot_id})";
         // $sth = $pdo->prepare($sql);
         // $sth->execute();
         // $sth = $pdo->prepare($sql);
@@ -77,6 +84,12 @@ function addTukkomi($pdo,$userId,$content,$photoId,$img,$spotId,$spot_lat,$spot_
         return false;
     }
 }
+
+function genPhotoId($length = 8)
+{
+    return substr(str_shuffle('1234567890abcdefghijklmnopqrstuvwxyz'), 0, $length);
+}
+
 
 //2点間の距離を計算
 //（緯度と経度の差を計算している．また，2乗和のルートではなく2乗和を返す）
@@ -154,9 +167,9 @@ if ($req == "fetch_list"){
     echo json_encode($output);
 }else if($req == "add_tukkomi"){
     //追加するツッコミ情報がクライアントから入力される
-    $spot_id = isset($_POST["spot_id"]) ? $_POST["spot_id"] : 1;
-    $spot_lat = isset($_POST["spot_lat"]) ? $_POST["spot_lat"] : null;
-    $spot_long = isset($_POST["spot_long"]) ? $_POST["spot_long"] : null;
+    $spot_id = isset($_POST["spot_id"]) ? $_POST["spot_id"] : null;
+    $spot_lat = isset($_POST["spot_lat"]) ? $_POST["spot_lat"] : 135;
+    $spot_long = isset($_POST["spot_long"]) ? $_POST["spot_long"] : 35;
     $img = isset($_POST["img"]) ? $_POST["img"] : null;
     $img_id = isset($_POST["img_id"]) ? $_POST["img_id"] : 0;
     $tukkomi_word = isset($_POST["tukkomi_word"]) ? $_POST["tukkomi_word"] : "nandeyanen";
