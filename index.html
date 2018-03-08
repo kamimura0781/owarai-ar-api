@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="UTF-8">
+	<meta name="description" content="">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>センサーの値を保存＆送信</title>
+	<!-- 自作のスタイルシートを読み込む -->
+	<link rel='stylesheet' href='./style.css' type='text/css' media='all'>
+	<!-- 自作のjavascriptプログラムを呼び出す -->
+	<script src="./script.js" type="text/javascript"></script>
+</head>
+<body>
+	<h1>送信状況</h1>
+		<p>状況：<span id="status"></span></p>
+
+		<input type="button" onclick="send_start()" value="データ送信開始">
+		<input type="button" onclick="send_stop()" value="データ送信停止">
+
+		<p>待機件数：<span id="waitnum"></span></p>
+		<p>保存件数：<span id="savenum"></span></p>
+
+		<input type="button" onclick="send_stored_data()" value="保存データ送信">
+		<input type="button" onclick="remove_data()" value="保存データ削除">
+
+	<h1>加速度（Gを含む）[m/s^2]</h1>
+		<table>
+			<tr><th>x</th><td><span id="acc-gx"></span></td></tr>
+			<tr><th>y</th><td><span id="acc-gy"></span></td></tr>
+			<tr><th>z</th><td><span id="acc-gz"></span></td></tr>
+		</table></body>
+</html>
