@@ -1,4 +1,9 @@
 <?php
+function calcDist($lat1,$lat2,$long1,$long2){
+    $d_lat = $lat1 - $lat2;
+    $d_long = $long1 - $long2;
+    return $d_lat*$d_lat+$d_long*$d_long;
+}
 /*interface TukkomiData
 {
     $tukkomi_word;
@@ -38,16 +43,26 @@ while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     // ツッコミを全部取得
 $stmt2 = $pdo->query("SELECT * FROM spot WHERE id = ${row[id]}");
     $spot = $stmt2->fetch(PDO::FETCH_ASSOC);
-    $newRow = array_merge($row, $spot);
+    $row = array_merge($row, $spot);
 
-    array_push($output, $newRow);
+
+    $dist = array('dist' => calcDist($lat,$spot['latitude'],$long,$spot['longitude']));
+    $row = array_merge($row,$dist);
+
+    array_push($output, $row);
 }
 
-print_r($output);
+
 
 //入力
-$lat = isset($_POST["lat"]) ? $_POST["lat"] : 35;
-$long = isset($_POST["long"]) ? $_POST["long"] : 135;
+$lat = isset($_POST["lat"]) ? $_POST["lat"] : 135;
+$long = isset($_POST["long"]) ? $_POST["long"] : 35;
 
 //距離の入れ替え処理
-for
+foreach ((array) $output as $key => $value) {
+    $sort[$key] = $value['dist'];
+}
+array_multisort($sort, SORT_ASC, $output);
+
+$output = json_encode($output);
+print_r($output);
