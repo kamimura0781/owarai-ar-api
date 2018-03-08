@@ -1,0 +1,87 @@
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET AUTOCOMMIT = 0;
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+CREATE TABLE `account` (
+  `id` int(11) NOT NULL,
+  `name` varchar(20) CHARACTER SET utf8 NOT NULL,
+  `password` varchar(20) CHARACTER SET utf8 NOT NULL,
+  `mail_address` varchar(120) CHARACTER SET utf8 NOT NULL,
+  `bio` varchar(200) NOT NULL,
+  `iconId` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `likes` (
+  `id` int(11) NOT NULL,
+  `userId` int(11) NOT NULL,
+  `tukkomiId` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `spot` (
+  `id` int(11) NOT NULL,
+  `latitude` int(11) NOT NULL,
+  `longitude` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE `tukkomi` (
+  `id` int(11) NOT NULL,
+  `content` varchar(60) CHARACTER SET utf8 NOT NULL,
+  `likes` int(11) NOT NULL,
+  `photoId` varchar(8) NOT NULL,
+  `spotId` int(11) NOT NULL,
+  `userId` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Indexes for table `account`
+--
+ALTER TABLE `account`
+  ADD UNIQUE KEY `id` (`id`);
+
+--
+-- Indexes for table `likes`
+--
+ALTER TABLE `likes`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `spot`
+--
+ALTER TABLE `spot`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `tukkomi`
+--
+ALTER TABLE `tukkomi`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `account`
+--
+ALTER TABLE `account`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=0;
+
+--
+-- AUTO_INCREMENT for table `likes`
+--
+ALTER TABLE `likes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=0;
+
+--
+-- AUTO_INCREMENT for table `spot`
+--
+ALTER TABLE `spot`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=0;
+
+--
+-- AUTO_INCREMENT for table `tukkomi`
+--
+ALTER TABLE `tukkomi`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=0;
+COMMIT;
