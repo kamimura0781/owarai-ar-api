@@ -4,24 +4,48 @@
         <title>テスト</title>
     </head>
     <body>
+        <h3>fetch same</h3>
+        <form action="./api.php" method="post">
+            <input type="hidden" name="req" value="fetch_same">
+            <input type="hidden" name="lat" value="48">
+            <input type="hidden" name="long" value="135">
+            <input type="submit" name="" value="fetch same">
+        </form>
+
+        <h3>tukkomi</h3>
+        <form action="./api.php" method="post">
+            <input type="hidden" name="req" value="tukkomi">
+            <input type="hidden" name="tukkomi_id" value="9">
+            <input type="submit" name="" value="tukkomi">
+        </form>
+
+        <h3>fetch list</h3>
+        <form action="./api.php" method="post">
+            <input type="hidden" name="req" value="fetch_list">
+            <input type="hidden" name="lat" value="48">
+            <input type="hidden" name="long" value="135">
+            <input type="submit" name="" value="fetch list">
+        </form>
+
+        <h3>add like</h3>
         <form action="./api.php" method="post">
             <input type="hidden" name="req" value="add_like">
-            <input type="hidden" name="tukkomi_id" value="114">
-            <input type="hidden" name="user_id" value="514">
-            <input type="submit" name="送信">
+            <input type="text" name="tukkomi_id" value="tukkomi">
+            <input type="text" name="user_id" value="user">
+            <input type="submit" name="" value="add like">
         </form>
-        <!--
+
+        <h3>add tukkomi</h3>
         <form action="./api.php" method="post" enctype="multipart/form-data">
             <input type="hidden" name="req" value="add_tukkomi">
             <input type="hidden" name="spot_id" value="">
             <input type="hidden" name="spot_lat" value="39.9">
             <input type="hidden" name="spot_long" value="135.3">
             <input type="hidden" name="tukkomi_word" value="全盛期の松坂大輔の息子か！">
-            <input type="hidden" name="user_id" value="0">
+            <input type="hidden" name="user_id" value="102">
             <input type="file" name="img">
             <input type="hidden" name="MAX_FILE_SIZE" value="2000000" />
-            <input type="submit" name="送信">
+            <input type="submit" name="" value="add tukkomi">
         </form>
-        -->
     </body>
 </html>

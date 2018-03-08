@@ -13,8 +13,10 @@ function getAllTukkomi($pdo,$lat,$long)
 
     // 連想配列を取得
     while($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $stmt2 = $pdo->query("SELECT * FROM spot WHERE id = ${row['spotId']}");
-        $spot = $stmt2->fetch(PDO::FETCH_ASSOC);
+        $sth2 = $pdo->prepare("SELECT * FROM spot WHERE id = :id");
+        $sth2->bindValue(':id', $row['spotId']);
+        $sth2->execute();
+        $spot = $sth2->fetch(PDO::FETCH_ASSOC);
         $row = array_merge($row, $spot);
 
         $dist = array('dist' => calcDist($lat,$spot['latitude'],$long,$spot['longitude']));
@@ -39,67 +41,95 @@ function getTukkomi($pdo,$tukkomi_id)
 /*
  * ユーザIDに対応するユーザ情報を取得
  */
-function getUser($pdo,$user_id)
+function getUser($pdo, $user_id)
 {
-    $stmt = $pdo->query("SELECT * FROM account WHERE id=${user_id}");
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $sth = $pdo->prepare("SELECT * FROM account WHERE id = :id");
+    $sth->bindValue(':id', $user_id);
+    $sth->execute();
+    $row = $sth->fetch(PDO::FETCH_ASSOC);
     unset($row['id']);
+    unset($row['mail_address']);
+    unset($row['password']);
     return $row;
 }
 
 /*
  * ツッコミ情報を追加
  */
-function addTukkomi($pdo,$userId,$content,$photoId,$img,$spotId,$spot_lat,$spot_long)
+function addTukkomi($pdo, $input_param)
 {
-    try
+    //変数を格納
+    /*
+    foreach ($input_param as $key => $value)
     {
-        //spotIdがなければ，新規スポットとしてツッコミを登録
-        if($spotId == null)
+        $$key = $value;
+    }
+    */
+    $userId  = $input_param["user_id"];
+    $content = $input_param["tukkomi_word"];
+    $photoId = $input_param["img_id"];
+    $img     = $input_param["img"];
+    $spotId  = $input_param["spot_id"];
+    $spot_lat  = $input_param["spot_lat"];
+    $spot_long = $input_param["spot_long"];
+
+    /*
+     * spotIdが無ければ、新スポットとして、新しいスポットと写真を登録
+     */
+    if($spotId == null)
+    {
+        try
         {
-            
             //新規スポットをspotテーブルに登録
             $pdo->beginTransaction();
-            $sql = "INSERT INTO spot (latitude,longitude) VALUES (${spot_lat},${spot_long})";
+            $sql = "INSERT INTO spot (latitude,longitude) VALUES (:lat, :lng)";
             $sth = $pdo->prepare($sql);
+            $sth->bindValue(':lat', $spot_lat);
+            $sth->bindValue(':lng', $spot_long);
             $sth->execute();
             $pdo->commit();
 
-            //もし新規画像ファイルが送られてきたなら，base64形式からバイナリ形式に変換する
-            if($img != null)
-            {
-                $img = base64_decode($img);
-                //写真IDを生成
-                $photoId = genPhotoId();    
-                //写真をサーバのフォルダにおく
-                file_put_contents("./img/".$photoId.".png", $img);
-            }
-
-            // $last_spotId = $pdo->lastInsertId('id');
-            // printf($last_spotId);
-
+            //写真をサーバのフォルダにおく(ファイル名は写真ID)
+            $img     = base64_decode($img);
+            $photoId = genPhotoId();
+            file_put_contents("./img/" . $photoId . ".png", $img);
         }
-        
-        //既存スポットとしてツッコミを登録
-        $stmt = $pdo->query("SELECT MAX(id) FROM spot");
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $new_spot_id = $spotId == null ? $row['MAX(id)'] : $spotId;
+        catch(PDOException $e)
+        {
+            print_r($e);
+            $pdo->rollBack();
+            return false;
+        }
 
+        // 最新のスポットidを取得
+        try
+        {
+            $stmt = $pdo->query("SELECT MAX(id) FROM spot");
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            $spotId = $row['MAX(id)'];
+        }
+        catch(PDOException $e)
+        {
+            return false;
+        }
+    }
+    
+    /*
+     * ツッコミ登録
+     */
+    try
+    {
         $pdo->beginTransaction();
-        $sql = "INSERT INTO tukkomi (userId,content,likes,photoId,spotId) VALUES (${userId},\"${content}\",0,\"${photoId}\",${new_spot_id})";
-        // $sth = $pdo->prepare($sql);
-        // $sth->execute();
-        // $sth = $pdo->prepare($sql);
-        // $sth->bindValue(':time', $time);
-        // $sth->bindValue(':x', $x);
-        // $sth->bindValue(':y', $y);
-        // $sth->bindValue(':z', $z);
-        // $sth->bindValue(':ip', $_SERVER["REMOTE_ADDR"]);
-        // $sth->execute();
-        // $pdo->commit();
-        $stmt = $pdo->query($sql);
-        //$stmt->execute();
+        $sql = "INSERT INTO tukkomi (userId,content,likes,photoId,spotId) VALUES (:userId,:content,:likes,:photoId,:spotId)";
+        $sth = $pdo->prepare($sql);
+        $sth->bindValue(':userId', $userId);
+        $sth->bindValue(':content', $content);
+        $sth->bindValue(':likes', 0);
+        $sth->bindValue(':photoId', $photoId);
+        $sth->bindValue(':spotId', $spotId);
+        $sth->execute();
         $pdo->commit();
+
         return true;
     }
     catch(PDOException $e)
@@ -170,7 +200,24 @@ catch(PDOException $e)
 // リクエストをクライアントから受け取る
 $req = isset($_POST["req"]) ? $_POST["req"] : "add_tukkomi";
 
-// ツッコミの一覧を取得
+/*
+ * ツッコミの一覧を取得
+ * 
+ * 与えるもの
+ * lat  : 現在位置の緯度
+ * long : 現在位置の経度
+ * 
+ * 返ってくるもの(以下の情報をまとめた配列のJSON)
+    [id] => ツッコミid
+    [content] => ツッコミの言葉
+    [likes] => likeの数
+    [photoId] => 写真のid
+    [spotId] => 場所のid
+    [userId] => ツッコミしたユーザーid
+    [latitude] => ツッコミ現場の緯度
+    [longitude] => ツッコミ現場の経度
+    [dist] => ツッコミ現場と現在位置の距離
+*/
 if ($req == "fetch_list")
 {
     //位置情報がクライアントから入力される
@@ -185,7 +232,10 @@ if ($req == "fetch_list")
     {
         $sort[$key] = $value['dist'];
     }
-    array_multisort($sort, SORT_ASC, $output);
+    if (count($output) > 0)
+    {
+        array_multisort($sort, SORT_ASC, $output);
+    }
 
     //クライアントに全ツッコミ情報を返す
     echo json_encode($output);
@@ -193,7 +243,22 @@ if ($req == "fetch_list")
     exit();
 }
 
-// ツッコミの詳細を表示
+/*
+ * ツッコミの詳細を表示
+ * 
+ * 与えるもの
+ * tukkomi_id: ツッコミのid
+ * 
+    [id] :id
+    [content]  ツッコミの言葉
+    [likes]    likeの数
+    [photoId]  写真のid
+    [spotId]   場所のid
+    [userId]   ツッコミをしたユーザーのid
+    [name]     ツッコミをしたユーザーの名前
+    [bio]      ツッコミをしたユーザーのプロフィール
+    [iconId]   ツッコミをしたユーザーのアイコンid
+ */
 if($req == "tukkomi")
 {
     //クライアントからツッコミIDが入力される
@@ -214,7 +279,24 @@ if($req == "tukkomi")
     exit();
 }
 
-// 同じ対象物と思われるツッコミを表示
+/*
+ * 同じ対象物と思われるツッコミを表示
+ * 
+ * 与えるもの
+ * lat  : 緯度
+ * long : 経度
+ * 
+ * 返ってくるもの(これの配列が近い順に)
+    [id]ツッコミid
+    [content]ツッコミの言葉
+    [likes]likeの数
+    [photoId]写真のid
+    [spotId]場所のid
+    [userId]ユーザーのid
+    [latitude]現場の緯度
+    [longitude]現場の経度
+    [dist]現場と現在位置の間の距離
+ */
 if($req == "fetch_same")
 {
     //位置情報がクライアントから入力される
@@ -231,6 +313,10 @@ if($req == "fetch_same")
     }
     array_multisort($sort, SORT_ASC, $output);
 
+    echo "<pre>";
+    print_r($output);
+    echo "</pre>";
+
     //クライアントに全ツッコミ情報を返す
     echo json_encode($output);
 
@@ -245,7 +331,7 @@ if($req == "add_like")
     //ユーザーのid
     $user_id    = isset($_POST["user_id"])    ? $_POST["user_id"]    : 1;
 
-    // データベースへ登録
+    // データベースのlikesテーブルへ登録
     try
     {
         $pdo->beginTransaction();
@@ -262,25 +348,53 @@ if($req == "add_like")
         $pdo->rollBack();
         echo "登録失敗";
     }
+
+    // データベースのtukkomiテーブルでlikesを加算
+    try
+    {
+        $pdo->beginTransaction();
+        $sql = "UPDATE tukkomi SET likes = likes + 1 WHERE id = :tukkomiId;";
+        $sth = $pdo->prepare($sql);
+        $sth->bindValue(':tukkomiId', $tukkomi_id);
+        $sth->execute();
+        $pdo->commit();
+        echo "登録完了";
+    }
+    catch(PDOException $e)
+    {
+        $pdo->rollBack();
+        echo "登録失敗";
+    }
 }
 
-// ツッコミを加える
+/*
+ * ツッコミを加える
+ * 
+ * spot_id      :場所id(既存の場所の場合)
+ * spot_lat     :緯度(新しい場所の場合)
+ * spot_long    :経度(新しい場所の場合)
+ * img          :画像データ(新しい場所の場合)
+ * img_id       :画像データ(既存の場所の場合)
+ * tukkomi_word :ツッコミの言葉
+ * user_id      :ツッコミをかました人のid
+ */
 if($req == "add_tukkomi")
 {
     //追加するツッコミ情報がクライアントから入力される
-    $spot_id   = isset($_POST["spot_id"]) ? $_POST["spot_id"] :null;
-    $spot_lat  = isset($_POST["spot_lat"]) ? $_POST["spot_lat"] : 135;
-    $spot_long = isset($_POST["spot_long"]) ? $_POST["spot_long"] : 35;
-    $img       = isset($_POST["img"]) ? $_POST["img"] : null;
-    $img_id    = isset($_POST["img_id"]) ? $_POST["img_id"] : 0;
-    $tukkomi_word = isset($_POST["tukkomi_word"]) ? $_POST["tukkomi_word"] : "nandeyanen";
-    $user_id   = isset($_POST["user_id"]) ? $_POST["user_id"] : 1;
-
+    $input_param = array(
+        "spot_id"   => isset($_POST["spot_id"])   ? $_POST["spot_id"]   :null,
+        "spot_lat"  => isset($_POST["spot_lat"])  ? $_POST["spot_lat"]  : 135,
+        "spot_long" => isset($_POST["spot_long"]) ? $_POST["spot_long"] : 35,
+        "img"       => isset($_POST["img"])       ? $_POST["img"]       : null,
+        "img_id"    => isset($_POST["img_id"])    ? $_POST["img_id"]    : 0,
+        "tukkomi_word" => isset($_POST["tukkomi_word"]) ? $_POST["tukkomi_word"] : "なんでやねん！",
+        "user_id"   => isset($_POST["user_id"])   ? $_POST["user_id"]   : 1
+    );
     //デバック用(base64で届かないとき)
-    //$img = base64_encode(file_get_contents($_FILES["img"]["tmp_name"]));
+    //$input_param["img"] = base64_encode(file_get_contents($_FILES["img"]["tmp_name"]));
 
     //ツッコミを追加
-    if(addTukkomi($pdo,$user_id,$tukkomi_word,$img_id,$img,$spot_id,$spot_lat,$spot_long))
+    if(addTukkomi($pdo,$input_param))
     {
         echo '登録成功';
     }else{
