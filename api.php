@@ -22,6 +22,14 @@ function getAllTukkomi($pdo,$lat,$long)
         $dist = array('dist' => calcDist($lat,$spot['latitude'],$long,$spot['longitude']));
         $row = array_merge($row,$dist);
 
+        //出力形式を整える
+        $row['tukkomi_word']  = $row['content'];
+        $row['tukkomi_img'] = $row['photoId'];
+        $row['tukkomi_id'] = $row['id'];
+        $row['spot_id'] = $row['spotId'];
+        $row['spot_lat'] = $spot['latitude'];
+        $row['spot_long'] = $spot['longitude'];
+        
         array_push($output, $row);
     }
 
@@ -35,6 +43,9 @@ function getTukkomi($pdo,$tukkomi_id)
 {
     $stmt = $pdo->query("SELECT * FROM tukkomi WHERE id=${tukkomi_id}");
     $row = $stmt->fetch(PDO::FETCH_ASSOC); 
+    $row['tukkomi'] = $row['content'];
+    $row['tukkomi_img'] = $row['photoId'];
+    $row['like'] = $row['likes'];
     return $row;
 }
 
@@ -50,6 +61,9 @@ function getUser($pdo, $user_id)
     unset($row['id']);
     unset($row['mail_address']);
     unset($row['password']);
+    $row['user_name'] = $row['name'];
+    $row['user_img'] = $row['img'];
+    $row['user_bio'] = $row['bio'];
     return $row;
 }
 
@@ -198,7 +212,7 @@ catch(PDOException $e)
  */
 
 // リクエストをクライアントから受け取る
-$req = isset($_POST["req"]) ? $_POST["req"] : "add_tukkomi";
+$req = isset($_POST["req"]) ? $_POST["req"] : "add_like";
 
 /*
  * ツッコミの一覧を取得
@@ -208,14 +222,14 @@ $req = isset($_POST["req"]) ? $_POST["req"] : "add_tukkomi";
  * long : 現在位置の経度
  * 
  * 返ってくるもの(以下の情報をまとめた配列のJSON)
-    [id] => ツッコミid
-    [content] => ツッコミの言葉
+    [tukkomi_id] => ツッコミid
+    [tukkomi_word] => ツッコミの言葉
     [likes] => likeの数
-    [photoId] => 写真のid
+    [tukkomi_img] => 写真のid
     [spotId] => 場所のid
     [userId] => ツッコミしたユーザーid
-    [latitude] => ツッコミ現場の緯度
-    [longitude] => ツッコミ現場の経度
+    [spot_lat] => ツッコミ現場の緯度
+    [spot_long] => ツッコミ現場の経度
     [dist] => ツッコミ現場と現在位置の距離
 */
 if ($req == "fetch_list")
@@ -250,13 +264,14 @@ if ($req == "fetch_list")
  * tukkomi_id: ツッコミのid
  * 
     [id] :id
-    [content]  ツッコミの言葉
-    [likes]    likeの数
-    [photoId]  写真のid
+    [tukkomi]  ツッコミの言葉
+    [like]    likeの数
+    [tukkomi_img]  写真のid
     [spotId]   場所のid
     [userId]   ツッコミをしたユーザーのid
-    [name]     ツッコミをしたユーザーの名前
-    [bio]      ツッコミをしたユーザーのプロフィール
+    [user_name]     ツッコミをしたユーザーの名前
+    [user_bio]      ツッコミをしたユーザーのプロフィール
+    [user_img]      ツッコミをしたユーザーの画像
     [iconId]   ツッコミをしたユーザーのアイコンid
  */
 if($req == "tukkomi")
@@ -288,11 +303,14 @@ if($req == "tukkomi")
  * 
  * 返ってくるもの(これの配列が近い順に)
     [id]ツッコミid
-    [content]ツッコミの言葉
-    [likes]likeの数
-    [photoId]写真のid
+    [tukkomi]ツッコミの言葉
+    [like]likeの数
+    [tukkomi_img]写真のid
     [spotId]場所のid
     [userId]ユーザーのid
+    [user_name]ユーザの名前
+    [user_img]ユーザの画像
+    [user_bio]ユーザのプロフィール
     [latitude]現場の緯度
     [longitude]現場の経度
     [dist]現場と現在位置の間の距離
@@ -406,7 +424,7 @@ if($req == "add_tukkomi")
     //追加するツッコミ情報がクライアントから入力される
     $input_param = array(
         "spot_id"   => isset($_POST["spot_id"])   ? $_POST["spot_id"]   :null,
-        "spot_lat"  => isset($_POST["spot_lat"])  ? $_POST["spot_lat"]  : 135,
+        "spot_lat"  => isset($_POST["spot_lat"])  ? $_POST["spot_lat"]  : 99,
         "spot_long" => isset($_POST["spot_long"]) ? $_POST["spot_long"] : 35,
         "img"       => isset($_POST["img"])       ? $_POST["img"]       : null,
         "img_id"    => isset($_POST["img_id"])    ? $_POST["img_id"]    : 0,
