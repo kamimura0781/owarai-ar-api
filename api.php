@@ -237,18 +237,42 @@ if($req == "fetch_same")
     exit();
 }
 
+// likeを加える
+if($req == "add_like")
+{
+    //クライアントからツッコミIDが入力される
+    $tukkomi_id = isset($_POST["tukkomi_id"]) ? $_POST["tukkomi_id"] : 2;
+    //ユーザーのid
+    $user_id    = isset($_POST["user_id"])    ? $_POST["user_id"]    : 1;
+
+    // データベースへ登録
+    try
+    {
+        $pdo->beginTransaction();
+        $sql = "INSERT INTO likes (userId, tukkomiId) VALUES (:userId, :tukkomiId)";
+        $sth = $pdo->prepare($sql);
+        $sth->bindValue(':userId', $user_id);
+        $sth->bindValue(':tukkomiId', $tukkomi_id);
+        $sth->execute();
+        $pdo->commit();
+        echo "登録完了";
+    }
+    catch(PDOException $e)
+    {
+        $pdo->rollBack();
+        echo "登録失敗";
+    }
+}
+
 // ツッコミを加える
 if($req == "add_tukkomi")
 {
-    echo "<pre>";
-    print_r($_POST);
-    echo "</pre>";
     //追加するツッコミ情報がクライアントから入力される
-    $spot_id = isset($_POST["spot_id"]) ? $_POST["spot_id"] :null;
-    $spot_lat = isset($_POST["spot_lat"]) ? $_POST["spot_lat"] : 135;
+    $spot_id   = isset($_POST["spot_id"]) ? $_POST["spot_id"] :null;
+    $spot_lat  = isset($_POST["spot_lat"]) ? $_POST["spot_lat"] : 135;
     $spot_long = isset($_POST["spot_long"]) ? $_POST["spot_long"] : 35;
-    $img = isset($_POST["img"]) ? $_POST["img"] : null;
-    $img_id = isset($_POST["img_id"]) ? $_POST["img_id"] : 0;
+    $img       = isset($_POST["img"]) ? $_POST["img"] : null;
+    $img_id    = isset($_POST["img_id"]) ? $_POST["img_id"] : 0;
     $tukkomi_word = isset($_POST["tukkomi_word"]) ? $_POST["tukkomi_word"] : "nandeyanen";
     $user_id   = isset($_POST["user_id"]) ? $_POST["user_id"] : 1;
 

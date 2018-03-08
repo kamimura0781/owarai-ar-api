@@ -4,6 +4,13 @@
         <title>テスト</title>
     </head>
     <body>
+        <form action="./api.php" method="post">
+            <input type="hidden" name="req" value="add_like">
+            <input type="hidden" name="tukkomi_id" value="114">
+            <input type="hidden" name="user_id" value="514">
+            <input type="submit" name="送信">
+        </form>
+        <!--
         <form action="./api.php" method="post" enctype="multipart/form-data">
             <input type="hidden" name="req" value="add_tukkomi">
             <input type="hidden" name="spot_id" value="">
@@ -15,5 +22,6 @@
             <input type="hidden" name="MAX_FILE_SIZE" value="2000000" />
             <input type="submit" name="送信">
         </form>
+        -->
     </body>
 </html>
